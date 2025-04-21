@@ -43,22 +43,6 @@ const JobSearch = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const lastJobElementRef = useCallback(
-    (node) => {
-      if (isLoading) return;
-      if (observer.current) observer.current.disconnect();
-
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && jobs.length < totalJobs) {
-          setCurrentPage((prevPage) => prevPage + 1);
-        }
-      });
-
-      if (node) observer.current.observe(node);
-    },
-    [isLoading, jobs, totalJobs]
-  );
-
   const fetchJobs = async (q = query, page = currentPage, isNewSearch = false) => {
     if (!q && page === 1) return;
     
@@ -125,7 +109,7 @@ const JobSearch = () => {
       transition={{ duration: 0.4 }}
       className="max-w-5xl mx-auto px-4 py-8 space-y-6 relative"
     >
-      <h1 className="text-4xl font-extrabold text-center text-gradient bg-gradient-to-r from-blue-500 via-blue-700 to-indigo-800 bg-clip-text text-transparent">
+      <h1 className="text-4xl font-extrabold text-center text-gradient bg-gradient-to-r from-blue-500 via-blue-700 to-indigo-800xt Job bg-clip-text text-transparent">
         Find Your Next Job
       </h1>
   

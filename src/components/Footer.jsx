@@ -5,9 +5,7 @@ import { useNavigate } from "react-router-dom";
 const Footer = () => {
     const navigate = useNavigate();
   const footerLinks = [
-    { href: "/", label: "Privacy Policy" },
-    { href: "/", label: "Terms of Service" },
-    { href: "/", label: "Contact Us" },
+    { href: "/about", label: "About me" },
   ];
 
   const socialLinks = [
