@@ -20,6 +20,11 @@ const JobDetails = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+  }, [id]); 
+
+  useEffect(() => {
     const fetchJob = async () => {
       try {
         setIsLoading(true);
