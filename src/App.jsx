@@ -16,7 +16,7 @@ const App = () => {
         <Route path="salary" element={<JobSalary />} />
         <Route path="company-salary" element={<CompanySalary />} />
         <Route path="job/:id" element={<JobDetails />} />
-        <Route path='about' element={<About/>} />
+        <Route path="about" element={<About/>} />
       </Route>
     </Routes>
   );
