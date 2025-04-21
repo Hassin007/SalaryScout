@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 
 const JobSearch = () => {
   const {
+    query,
     setQuery,
     setJobs,
     jobs,
@@ -27,6 +28,7 @@ const JobSearch = () => {
 
   const [searchValue, setSearchValue] = useState('');
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const [hasMoreJobs, setHasMoreJobs] = useState(false);
   const observer = useRef();
 
   useEffect(() => {
@@ -57,8 +59,9 @@ const JobSearch = () => {
     [isLoading, jobs, totalJobs]
   );
 
-  const fetchJobs = async (q = query, page = currentPage) => {
-    if (!q) return;
+  const fetchJobs = async (q = query, page = currentPage, isNewSearch = false) => {
+    if (!q && page === 1) return;
+    
     try {
       setIsLoading(true);
       const data = await searchJobs(
@@ -68,13 +71,17 @@ const JobSearch = () => {
         page
       );
 
-      if (page === 1) {
+      if (isNewSearch || page === 1) {
         setJobs(data);
       } else {
         setJobs((prev) => [...prev, ...data]);
       }
 
-      setTotalJobs(data.length);
+      setHasMoreJobs(data.length > 0);
+
+      if (data.length) {
+      setTotalJobs(prev => data.length > 0 ? prev + data.length : prev);
+      }
     } catch (err) {
       toast.error("Failed to fetch jobs. Please try again.");
       console.error('Error fetching jobs:', err);
@@ -83,9 +90,14 @@ const JobSearch = () => {
     }
   };
 
+  const handleLoadMore = () => {
+    setCurrentPage((prevPage) => prevPage + 1);
+  };
+
   useEffect(() => {
-    if (currentPage > 1) fetchJobs(query, currentPage);
-    // eslint-disable-next-line
+    if (currentPage >= 1) {
+      fetchJobs(query, currentPage, currentPage === 1);
+    }
   }, [currentPage]);
 
   const handleFilterChange = (key, value) => {
@@ -113,10 +125,10 @@ const JobSearch = () => {
       transition={{ duration: 0.4 }}
       className="max-w-5xl mx-auto px-4 py-8 space-y-6 relative"
     >
-      <h1 className="text-4xl font-extrabold text-center text-gradient bg-gradient-to-r from-blue-500 via-blue-700 to-indigo-800xt Job bg-clip-text text-transparent">
+      <h1 className="text-4xl font-extrabold text-center text-gradient bg-gradient-to-r from-blue-500 via-blue-700 to-indigo-800 bg-clip-text text-transparent">
         Find Your Next Job
       </h1>
-
+  
       <motion.form
         layout
         onSubmit={handleSubmit}
@@ -131,14 +143,11 @@ const JobSearch = () => {
                 label: 'Country',
                 type: 'select',
                 options: [
-                  // North America & Europe (existing)
                   { value: 'us', label: 'United States' },
                   { value: 'ca', label: 'Canada' },
                   { value: 'gb', label: 'United Kingdom' },
                   { value: 'de', label: 'Germany' },
                   { value: 'fr', label: 'France' },
-                  
-                  // South Asia
                   { value: 'in', label: 'India' },
                   { value: 'pk', label: 'Pakistan' },
                   { value: 'bd', label: 'Bangladesh' },
@@ -147,8 +156,6 @@ const JobSearch = () => {
                   { value: 'bt', label: 'Bhutan' },
                   { value: 'mv', label: 'Maldives' },
                   { value: 'af', label: 'Afghanistan' },
-                  
-                  // Middle East
                   { value: 'ae', label: 'United Arab Emirates' },
                   { value: 'sa', label: 'Saudi Arabia' },
                   { value: 'qa', label: 'Qatar' },
@@ -163,15 +170,11 @@ const JobSearch = () => {
                   { value: 'sy', label: 'Syria' },
                   { value: 'ye', label: 'Yemen' },
                   { value: 'tr', label: 'Turkey' },
-                  
-                  // Other major countries (existing)
                   { value: 'au', label: 'Australia' },
                   { value: 'jp', label: 'Japan' },
                   { value: 'cn', label: 'China' },
                   { value: 'br', label: 'Brazil' },
                   { value: 'za', label: 'South Africa' },
-                  
-                  // Fallback
                   { value: 'other', label: 'Other' }
                 ],
               },
@@ -193,16 +196,16 @@ const JobSearch = () => {
           onFilterChange={handleFilterChange}
           resetFilters={resetFilters}
         />
-      <Button 
-            type="submit" 
-            className="w-full shadow hover:scale-105 transition-transform 
-            bg-gradient-to-r from-blue-600 to-indigo-800
-            text-white hover:from-blue-700 hover:to-indigo-700"
-      >
-        {isLoading ? 'Searching...' : `Search Jobs for "${searchValue || '...'}"`}
-      </Button>
+        <Button 
+          type="submit" 
+          className="w-full shadow hover:scale-105 transition-transform 
+          bg-gradient-to-r from-blue-600 to-indigo-800
+          text-white hover:from-blue-700 hover:to-indigo-700"
+        >
+          {isLoading ? 'Searching...' : `Search Jobs for "${searchValue || '...'}"`}
+        </Button>
       </motion.form>
-
+  
       {isLoading && jobs.length === 0 ? (
         <div className="grid sm:grid-cols-2 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -210,26 +213,40 @@ const JobSearch = () => {
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <p className="text-center text-gray-400 text-lg font-medium mt-8">No jobs found. Try another search.</p>
+        <p className="text-center text-gray-400 text-lg font-medium mt-8">
+          No jobs found. Try another search.
+        </p>
       ) : (
-        <motion.div layout className="grid sm:grid-cols-2 gap-4">
-          {jobs.map((job, index) => {
-            const isLast = index === jobs.length - 1;
-            return (
+        <>
+          <motion.div layout className="grid sm:grid-cols-2 gap-4">
+            {jobs.map((job, index) => (
               <motion.div
-                key={index}
-                ref={isLast ? lastJobElementRef : null}
+                key={`${job.id}-${index}`}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.02 }}
               >
                 <JobCard job={job} />
               </motion.div>
-            );
-          })}
-        </motion.div>
+            ))}
+          </motion.div>
+  
+          {hasMoreJobs && (
+            <div className="flex justify-center mt-8">
+              <Button
+                onClick={handleLoadMore}
+                disabled={isLoading}
+                className="shadow hover:scale-105 transition-transform 
+                bg-gradient-to-r from-blue-600 to-indigo-800
+                text-white hover:from-blue-700 hover:to-indigo-700 px-8 py-4"
+              >
+                {isLoading ? 'Loading...' : 'Load More Jobs'}
+              </Button>
+            </div>
+          )}
+        </>
       )}
-
+  
       {isLoading && jobs.length > 0 && (
         <div className="grid sm:grid-cols-2 gap-4 mt-4">
           {Array.from({ length: 2 }).map((_, i) => (
@@ -237,11 +254,11 @@ const JobSearch = () => {
           ))}
         </div>
       )}
-
+  
       {showScrollTop && (
         <Button
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 rounded-full p-2 shadow-md bg-indigo-600 hover:bg-indigo-700 text-white transition"
+          className="fixed bottom-6 right-6 rounded-full p-2 shadow-md bg-gradient-to-r from-blue-600 to-indigo-800 hover:from-blue-700 hover:to-indigo-700 text-white transition"
         >
           <ArrowUpIcon className="h-5 w-5" />
         </Button>
